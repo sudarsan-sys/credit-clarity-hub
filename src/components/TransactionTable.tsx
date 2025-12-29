@@ -10,45 +10,18 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
-interface Transaction {
+// Interface matching your Backend JSON structure
+export interface Transaction {
   date: string;
-  description: string;
-  type: "credit" | "debit";
+  narrative?: string;   // Backend sends 'narrative'
+  description?: string; // Frontend might expect 'description'
+  type: "CREDIT" | "DEBIT" | "credit" | "debit";
   amount: number;
 }
 
-const transactions: Transaction[] = [
-  {
-    date: "Dec 28, 2025",
-    description: "Payment from Reliance Industries",
-    type: "credit",
-    amount: 245000,
-  },
-  {
-    date: "Dec 26, 2025",
-    description: "GST Payment - Q3 2025",
-    type: "debit",
-    amount: 42500,
-  },
-  {
-    date: "Dec 24, 2025",
-    description: "Inventory Purchase - Raw Materials",
-    type: "debit",
-    amount: 156000,
-  },
-  {
-    date: "Dec 22, 2025",
-    description: "Payment from Tata Steel Ltd",
-    type: "credit",
-    amount: 380000,
-  },
-  {
-    date: "Dec 20, 2025",
-    description: "Staff Salary - December",
-    type: "debit",
-    amount: 175000,
-  },
-];
+interface TransactionTableProps {
+  transactions: Transaction[];
+}
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-IN", {
@@ -58,7 +31,7 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-const TransactionTable = () => {
+const TransactionTable = ({ transactions = [] }: TransactionTableProps) => {
   return (
     <Card className="card-shadow-lg border-border/50 bg-card">
       <CardHeader>
@@ -84,54 +57,65 @@ const TransactionTable = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.map((transaction, index) => (
-                <TableRow
-                  key={index}
-                  className="transition-colors hover:bg-muted/30"
-                >
-                  <TableCell className="font-medium text-muted-foreground">
-                    {transaction.date}
-                  </TableCell>
-                  <TableCell className="text-foreground">
-                    {transaction.description}
-                  </TableCell>
-                  <TableCell>
-                    {transaction.type === "credit" ? (
-                      <div className="flex items-center gap-1.5">
-                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-success/10">
-                          <ArrowDownLeft className="h-3 w-3 text-success" />
-                        </div>
-                        <span className="text-sm font-medium text-success">Credit</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5">
-                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive/10">
-                          <ArrowUpRight className="h-3 w-3 text-destructive" />
-                        </div>
-                        <span className="text-sm font-medium text-destructive">Debit</span>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell
-                    className={`text-right font-semibold ${
-                      transaction.type === "credit"
-                        ? "text-success"
-                        : "text-destructive"
-                    }`}
-                  >
-                    {transaction.type === "credit" ? "+" : "-"}
-                    {formatCurrency(transaction.amount)}
+              {transactions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                    No transactions found.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                transactions.map((transaction, index) => {
+                  // Normalize type to handle case sensitivity (CREDIT vs credit)
+                  const isCredit = transaction.type.toUpperCase() === "CREDIT";
+
+                  return (
+                    <TableRow
+                      key={index}
+                      className="transition-colors hover:bg-muted/30"
+                    >
+                      <TableCell className="font-medium text-muted-foreground">
+                        {transaction.date}
+                      </TableCell>
+                      <TableCell className="text-foreground">
+                        {/* Fallback for narrative vs description */}
+                        {transaction.narrative || transaction.description}
+                      </TableCell>
+                      <TableCell>
+                        {isCredit ? (
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-success/10">
+                              <ArrowDownLeft className="h-3 w-3 text-success" />
+                            </div>
+                            <span className="text-sm font-medium text-success">Credit</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive/10">
+                              <ArrowUpRight className="h-3 w-3 text-destructive" />
+                            </div>
+                            <span className="text-sm font-medium text-destructive">Debit</span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell
+                        className={`text-right font-semibold ${isCredit ? "text-success" : "text-destructive"
+                          }`}
+                      >
+                        {isCredit ? "+" : "-"}
+                        {formatCurrency(transaction.amount)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </div>
-        
+
         {/* Summary footer */}
         <div className="mt-4 flex items-center justify-between rounded-lg bg-muted/30 px-4 py-3">
           <span className="text-sm text-muted-foreground">
-            Showing 5 of 47 transactions
+            Showing {transactions.length} transactions
           </span>
           <span className="text-sm font-medium text-primary cursor-pointer hover:underline">
             View all transactions →
